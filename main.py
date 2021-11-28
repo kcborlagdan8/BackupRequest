@@ -7,14 +7,23 @@ import lookup
 wb = load_workbook('.\BackupRequests.xlsx')
 ws = wb.active
 
-count = 0#number of tickets
+count = 0 #number of tickets
 
-#loop through rows for backup requests
+def dbtypealias(dbtype):
+    switcher = {
+        "Preview": "D",
+        "Production": "P",
+        "Sandbox": "S"
+    }
+    return switcher.get(dbtype, "XXXXXX")
+
+'''Loop through rows for backup requests'''
 for row in range(1, 300): #row
     for col in range(1, 7): #column
-        char = get_column_letter(col)
+        char = get_column_letter(col) #e.g. get C is C4 cell name
         val = ws[char + str(row)].value
-        if(col == 6 and val != None and "Database Backup Request" in str(val)):
+
+        if(col == 6 and val != None and "Database Backup Request" in str(val)): #Get cases with subject Backup Request
             count += 1
             #get values from excel
             clientID = ws["D" + str(row)].value
@@ -23,8 +32,11 @@ for row in range(1, 300): #row
             product = ws["C" + str(row)].value
 
             #Generate sftp credentials
-            session = SFTP().credGen(case)
-            credentials = SFTP().getCred(session)
+            try:
+                session = SFTP().credGen(case)
+                credentials = SFTP().getCred(session)
+            except:
+                credentials = "XXXXX"
 
             #Get instance name 
             domain = ws["G" + str(row)].value #get dlz value
@@ -35,23 +47,12 @@ for row in range(1, 300): #row
             #end get instance name
 
             #get db name - not accurate for VT23
-
-
             #Get database type
             subject = ws["F" + str(row)].value #check if preview, sandbox, production
             dbtype = subject.split("-")
             dbtype = dbtype[1].strip()
-            def dbtypealias(dbtype):
-                switcher = {
-                    "Preview": "D",
-                    "Production": "P",
-                    "Sandbox": "S"
-                }
-                return switcher.get(dbtype, "XXXXXX")
-            #end database type
-
             dbtype = dbtypealias(dbtype)
-
+            #end database type   
             
             #get DB Server if NOT PREVIEW
             if(dbtype != "D"): 
@@ -87,7 +88,7 @@ for row in range(1, 300): #row
                 databaseName += "_Sandbox"
     
             #print(databaseName)
-            print( dbserver + "," + databaseName + "," + clientID + "," + "N,Y," + "\"" + client + "\"," + case + "," + credentials
+            print(dbserver + "," + databaseName + "," + clientID + "," + "N,Y," + "\"" + client + "\"," + case + "," + credentials
             )
 
             
