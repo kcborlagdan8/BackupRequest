@@ -1,27 +1,43 @@
 from dns.rdatatype import NULL
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
-import re
 from sftp import SFTP
 import lookup
 import sys
 
-file = sys.argv[1]
+#Input main.py Cases.xlsx 1
+file = sys.argv[1] #Cases.xlsx
+type = sys.argv[2] #1
 
-search = "database backup request" if "backuprequest" in str(file).lower() else "support server (not support pod)"
+######################
+#   Types of Cases   #
+# 1 - Backup Request #
+# 2 - Data Consent   #
+# 3 - Support Pod    #
+######################
+def caseType(x):
+    val = {
+        "1": "database backup request",
+        "2": "support server (not support pod)",
+        "3": "support pod"
+    }
+    return val.get(x, "XXXXXX")
+
+search = caseType(type) if type in ["1", "2", "3"] else exit("Choose from 1-3 only.")
+
 wb = load_workbook(file)
 ws = wb.active
-count = 0 #number of tickets
+count = 0 #number of tickets with type
 dbtype = 'P'
 dbserver = ''
 
 def dbtypealias(dbtype):
-    switcher = {
+    val = {
         "Preview": "D",
         "Production": "P",
         "Sandbox": "S"
     }
-    return switcher.get(dbtype, "XXXXXX")
+    return val.get(dbtype, "XXXXXX")
 
 #loop through rows for backup requests
 for row in range(1, 300): #row
@@ -45,11 +61,8 @@ for row in range(1, 300): #row
                 credentials = ""
 
             #Get instance name 
-            domain = ws["G" + str(row)].value #get dlz value
-            try:
-                instance = re.search('(.+?)@(.+?).com', domain).group(2).title()
-            except AttributeError:
-                instance = ""
+            domain = ws["G" + str(row)].value #get email
+            instance = lookup.getInstanceName(domain)
             #end get instance name
 
             #Get database type
@@ -70,13 +83,9 @@ for row in range(1, 300): #row
                     fqdn = ""
 
                 if(product == "Vision"):
-                    dbserver = lookup.getDBfromCNAME(fqdn)
+                    dbserver = lookup.getDBfromCNAMEDFVE(fqdn)
                 else:
-                    try:
-                        pod = re.search('vt(.+?).deltekfirst.com.', fqdn).group(1)
-                        dbserver = f"USEAPDVT{pod}DB1"
-                    except AttributeError:
-                        pod = ""
+                    dbserver = lookup.getVTPod(fqdn)
             else:
                 dbserver = "USEAPVVT0DB1"
 
@@ -95,7 +104,7 @@ for row in range(1, 300): #row
                 databaseName += "_Sandbox"
     
             #print(databaseName)
-            print(f"{dbserver},{databaseName},{clientID},N,Y,\"{client}\",{case},{credentials}")
+            print(f"{dbserver},{databaseName},{clientID},N,Y,\"{client}\",{case},{credentials[0]},{credentials[1]},{credentials[2]}")
 
             
 print(f"\nNumber of Backup Requests: {str(count)}")

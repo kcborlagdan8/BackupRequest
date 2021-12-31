@@ -70,4 +70,4 @@ class SFTP:
         sftpPass= soup.find(id='ContentPlaceHolder1_ftpPassword').text
         sftpExpiry = soup.find(id='ContentPlaceHolder1_ftpExpires').text
 
-        return ','.join([sftpUsername,sftpPass,sftpExpiry])
+        return [sftpUsername,sftpPass,sftpExpiry]

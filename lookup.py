@@ -1,8 +1,9 @@
 import dns.resolver
+import re
 
 #get DB Server
-def getDBfromCNAME(cname):
-    switcher = {
+def getDBfromCNAMEDFVE(cname):
+    cnames = {
 	"h5.deltekfirst.com.": "USEAPDVE5DB1",
 	"h9.deltekfirst.com.": "USEAPDVE7DB1",
 	"h11.deltekfirst.com.": "USEAPDVE8DB1",
@@ -21,7 +22,7 @@ def getDBfromCNAME(cname):
 	"h37.deltekfirst.com.": "USEAPDVE16DB1",
     "h39.deltekfirst.com.": "USEAPDVE17DB1"
     }
-    return switcher.get(cname, "XXXXXX")
+    return cnames.get(cname, "XXXXXX")
 
 def dnsresolver(fqdn):
     result = dns.resolver.resolve(fqdn, 'CNAME')
@@ -29,3 +30,21 @@ def dnsresolver(fqdn):
         cname = cnameval.target
     return str(cname)
 
+def getVTPod(fqdn):
+	region = "USEA"
+	try:
+		pod = re.search('vt(.+?).deltekfirst.com.', fqdn).group(1)
+		if(pod == "16"): region = "EUWE"
+		if(pod == "17"): region = "APAU"
+		if(pod == "18"): region = "CACE"
+		db = f"{region}PDVT{pod}DB1"
+	except AttributeError: db = ""
+
+	return db
+	
+def getInstanceName(domain):
+	try:	
+		instance = re.search('(.+?)@(.+?).com', domain).group(2).title()
+	except AttributeError:
+		instance = ""
+	return instance
