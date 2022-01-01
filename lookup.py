@@ -47,4 +47,4 @@ def getInstanceName(domain):
 		instance = re.search('(.+?)@(.+?).com', domain).group(2).title()
 	except AttributeError:
 		instance = ""
-	return instance
+	return re.sub('[^A-Za-z0-9]+', '',instance) #remove special characters

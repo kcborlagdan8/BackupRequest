@@ -58,7 +58,7 @@ for row in range(1, 300): #row
                 session = SFTP().credGen(case)
                 credentials = SFTP().getCred(session)
             except Exception:
-                credentials = ""
+                credentials = "SFTP already created"
 
             #Get instance name 
             domain = ws["G" + str(row)].value #get email
@@ -104,7 +104,8 @@ for row in range(1, 300): #row
                 databaseName += "_Sandbox"
     
             #print(databaseName)
-            print(f"{dbserver},{databaseName},{clientID},N,Y,\"{client}\",{case},{credentials[0]},{credentials[1]},{credentials[2]}")
+            cred = ",".join(credentials)
+            print(f"{dbserver},{databaseName},{clientID},N,Y,\"{client}\",{case},{cred}")
 
             
 print(f"\nNumber of Backup Requests: {str(count)}")
