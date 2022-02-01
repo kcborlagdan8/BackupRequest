@@ -14,12 +14,14 @@ type = sys.argv[2] #1
 # 1 - Backup Request #
 # 2 - Data Consent   #
 # 3 - Support Pod    #
+# 9 - All SRs        #
+# 0 - All Incidents  #
 ######################
 def caseType(x):
     val = {
-        "1": "database backup request",
-        "2": "support server (not support pod)",
-        "3": "support pod"
+        "1": ["database backup request"],
+        "2": ["support server (not support pod)","local restore"],
+        "3": ["support pod"]
     }
     return val.get(x, "XXXXXX")
 
@@ -40,11 +42,11 @@ def dbtypealias(dbtype):
     return val.get(dbtype, "XXXXXX")
 
 #loop through rows for backup requests
-for row in range(1, 300): #row
+for row in range(3, 300): #row
     for col in range(1, 7): #column
         char = get_column_letter(col)
         val = ws[char + str(row)].value
-        if(col == 6 and val is not None and search in str(val).lower()):
+        if(col == 6 and val is not None and any(y in str(val).lower() for y in search)):
             count += 1
             
             #get values from excel
@@ -69,6 +71,8 @@ for row in range(1, 300): #row
             subject = ws["F" + str(row)].value #check if preview, sandbox, production
             if(search == "database backup request"):
                 dbtype = subject.split("-")
+                print(dbtype)
+                print(row)
                 dbtype = dbtype[1].strip()
                 dbtype = dbtypealias(dbtype)
             #end database type           
@@ -105,6 +109,7 @@ for row in range(1, 300): #row
     
             #print(databaseName)
             cred = ",".join(credentials)
+            if(dbserver == "XXXXXX"): databaseName = dbserver #if fqdn was not found
             print(f"{dbserver},{databaseName},{clientID},N,Y,\"{client}\",{case},{cred}")
 
             

@@ -37,14 +37,15 @@ def getVTPod(fqdn):
 		if(pod == "16"): region = "EUWE"
 		if(pod == "17"): region = "APAU"
 		if(pod == "18"): region = "CACE"
-		db = f"{region}PDVT{pod}DB1"
-	except AttributeError: db = ""
+		dbserver = f"{region}PDVT{pod}DB1"
+	except AttributeError: dbserver = "XXXXXX"
 
-	return db
+	return dbserver
 	
 def getInstanceName(domain):
 	try:	
-		instance = re.search('(.+?)@(.+?).com', domain).group(2).title()
+		#instance = re.search('(.+?)@(.+?).com', domain).group(2).title()
+		instance = re.search('(.+?).com', domain).group(1).title()
 	except AttributeError:
 		instance = ""
-	return re.sub('[^A-Za-z0-9]+', '',instance) #remove special characters
+	return re.sub('[^A-Za-z0-9]+', '', instance) #remove special characters
