@@ -12,14 +12,14 @@ config_path = '\\'.join([ROOT_DIR, 'config.json'])
 
 with open(config_path, 'r') as config_file:
     config = json.loads(config_file.read())
-    config = config['sftp']
+    sftpconfig = config['sftp']
+    deltekconfig = config['deltekpages']
 
-USERNAME = config['username']
-PASSWORD = config['password']
-URL = config['url']
-CONTENTTYPE = config['content-type']
-USERAGENT = config['user-agent']
-
+USERNAME = deltekconfig['username']
+PASSWORD = deltekconfig['password']
+URL = sftpconfig['url']
+CONTENTTYPE = deltekconfig['content-type']
+USERAGENT = deltekconfig['user-agent']
 
 class SFTP:
     def __init__(self):
@@ -46,7 +46,7 @@ class SFTP:
         return [viewStateToken,viewStateGenToken,eventValToken]
 
 
-    def credGen(self, rnt):
+    def sessionGen(self, rnt):
         self.session_site = self.auth()
         tokens = self.parse(self.session_site)
         cookies = self.session_site.cookies

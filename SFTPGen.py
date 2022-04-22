@@ -6,9 +6,9 @@ def main():
     x = 1
     c = None
     list = sys.argv[1:]
-    errormessage = "SFTP credentials already created or SFTP site is down"
+    errormessage = "SFTP credentials already created or SFTP site is inaccessible"
     for l in list:
-        html = SFTP().credGen(l)
+        html = SFTP().sessionGen(l)
         while(x != 0):
             try:
                 credentials = SFTP().getCred(html)                
@@ -16,9 +16,8 @@ def main():
                 c = credentials
             except Exception:
                 credentials = errormessage
-                l += "_"
+                    
         c = ",".join(credentials)
-        print(f"{l}: {c}")
         if(credentials != errormessage):
             print(f"""
 SecureFTP Server: secureftp2.deltek.com

@@ -1,6 +1,6 @@
 import lookup
 from sftp import SFTP
-import logging
+from DataViewer import DataViewer
 
 class Case():
     def __init__(self, request):
@@ -11,9 +11,11 @@ class Case():
         self.email = request['email']
         self.dlz = request['dlz']
         self.subject = request['subject']
+        self.dataconsentdate = request['dataconsentdate']
+        self.asc = request['asc']
         self.db = None
         self.dbserver = None
-        self.instance = lookup.getInstanceName(self.dlz)
+        self.instance = None
 
     def getDBType(self):
         def dbtypealias(dbtype):
@@ -29,11 +31,12 @@ class Case():
         return dbtypealias(dbtype)
 
     def getDB(self, dbtype):
+        self.instance = lookup.getInstanceName(self.dlz)
         if(dbtype == "D"):
             self.dbserver = "USEAPVVT0DB1"
         #get DB Server if NOT PREVIEW
         else: 
-            try:   
+            try:     
                 fqdn = lookup.dnsresolver(f"{self.instance}.deltekfirst.com") 
             except:
                 print(f"FQDN not found for {self.instance}, {self.clientID}. Check if the client has different instance name.", end = "\n")
@@ -62,21 +65,30 @@ class BackupRequest(Case):
     def __init__(self, request):
         super().__init__(request)
         self.credentials = None
+        
 
     def generateSFTP(self):
         try:
-            session = SFTP().credGen(self.rnt)
+            session = SFTP().sessionGen(self.rnt)
             self.credentials = SFTP().getCred(session)
         except Exception:
-            self.credentials = "SFTP already created"
+            self.credentials = "SFTP already created or the site is inaccessible"
 
-    def ajera():
-        pass
-    
-    '''
-    def getDB(self, dbtype): 
-    super().getDB(dbtype)   
-    ''' 
+    def ajera(self):
+        if("[ajera cloud support] requesting database" in self.subject.lower()):            
+            self.clientID = lookup.getAxiumAccountNum(self.subject)
+        dv = DataViewer()
+        html = dv.sessionGen(self.clientID)
+        data = dv.getData(html) 
+        dblist = []
+        
+        for d in data:
+            self.clientID = d[0]
+            self.dbserver = f"""USEAPD{d[1]}/{d[2]}"""
+            dbdesc = d[4]
+            self.db = d[3]
+            dblist.append([self.dbserver,self.db,self.clientID,f"""{self.client}:{dbdesc}"""])
+        return dblist
 
 class DatabaseRefresh(Case):
     def __init__(self, request):

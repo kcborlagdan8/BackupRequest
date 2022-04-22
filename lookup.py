@@ -34,7 +34,7 @@ def getVTPod(fqdn):
 	region = "USEA"
 	try:
 		pod = re.search('vt(.+?).deltekfirst.com.', fqdn).group(1)
-		if(pod == "16"): region = "EUWE"
+		if(pod in ["16","36"]): region = "EUWE"
 		if(pod == "17"): region = "APAU"
 		if(pod == "18"): region = "CACE"
 		dbserver = f"{region}PDVT{pod}DB1"
@@ -49,3 +49,10 @@ def getInstanceName(domain):
 	except AttributeError:
 		instance = ""
 	return re.sub('[^A-Za-z0-9]+', '', instance) #remove special characters
+
+def getAxiumAccountNum(subj):
+	try:	
+		axiumNum = re.search('D00(.+?)_(.+?)', subj).group(1).title()
+	except AttributeError:
+		axiumNum = ""
+	return (axiumNum)
