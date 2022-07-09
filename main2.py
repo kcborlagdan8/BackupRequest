@@ -5,6 +5,7 @@ from Case import *
 from sftp import SFTP
 import lookup
 import sys
+import secrets
 
 
 #Input main.py Cases.xlsx 1
@@ -25,20 +26,21 @@ type = sys.argv[2] #1
 dbr = "database backup request"
 def caseType(x):
     cType = {
-        "1": ["database backup request","ajera database backup download request","[ajera cloud support] requesting database"],
+        "1": ["database backup request","database backup download request","[ajera cloud support] requesting database:"],
         "2": ["support server (not support pod)", "local restore", "local server", "backup copy", "local ftp"],
         "3": ["support pod"],
-        "4": ["database refresh"]
+        "4": ["database refresh - refresh sandbox from a copy of production", "database refresh - refresh production from a copy of sandbox"],
+        "5": ["database refresh - refresh preview from a copy of productio"]
     }
     #All SRs "9"
-    cType["9"] = [cType["1"][0], cType["4"][0]]
+    cType["9"] = [cType["1"][0], cType["4"][0], cType["5"][0]]
 
     #All incidents "0"
     cType["0"] = [cType["2"][0], cType["2"][1], cType["3"][0]]
 
     return cType.get(x, "XXXXXX")
  
-search = caseType(type) if type in ["1", "2", "3", "4", "9", "0"] else exit("Choose from 0-9 only.")
+search = caseType(type) if type in ["1", "2", "3", "4", "5", "9", "0"] else exit("Choose from 0-9 only.")
 
 wb = load_workbook(file)
 ws = wb.active
@@ -64,7 +66,7 @@ for row in range(1, 300): #row
     for col in range(1, 7): #column
         char = get_column_letter(col)
         val = ws[char + str(row)].value
-        if(col == 6 and val is not None and "Refresh Preview" not in val and any(y in str(val).lower() for y in search)):
+        if(col == 6 and val is not None and any(y in str(val).lower() for y in search)):
             count += 1
             #create dict from excel
             request = {
@@ -86,30 +88,31 @@ for row in range(1, 300): #row
                     continue
                 br = BackupRequest(request)                    
                 br.generateSFTP()
-                cred = ",".join(br.credentials)
+                cred = ",".join(br.credentials) if (br.credentials != "SFTP credentials already created or SFTP site is inaccessible") else br.credentials
                 br.rnt = br.rnt.replace("-","")
                 #Ajera database backup download request
                 if(request["product"] == "Ajera" and type in ["1","2"]):
                     ajeradbs = br.ajera()
                     for a in ajeradbs:
+                        
                         ajeraline += f"""{a[0]},{a[1]},{a[2]},N,Y,"{a[3]}",RNT{br.rnt},{br.dataconsentdate},{cred}
-"""
-                    #continue
+"""#,{cred},{secrets.token_urlsafe(10)},{secrets.token_urlsafe(10)}                     
+                    brline += ajeraline
+                    continue
 
                 elif(val.lower().find(search[0]) != -1 and type == "1"):
                     dbtype = br.getDBType()
                     br.getDB(dbtype)
                 
-                else: #data consent  
+                else: #data consent 
                     br.getDB("P")
                     
-                brline += ajeraline
-                
+
                 if(request["product"] != "Ajera"): brline +=f"""{br.dbserver},{br.db},{br.clientID},N,Y,\"{br.client}\",RNT{br.rnt},{br.dataconsentdate},{cred}
-"""
+""" #,{secrets.token_urlsafe(10)},{secrets.token_urlsafe(10)}
                 brcount += 1
             
-            if(type == "4" or type == "9" and val.lower().find(search[1]) != -1): #DB Refresh
+            if(request["product"] != "Ajera" and type == "4" or type == "5" or type == "9" and (val.lower().find(search[1]) != -1 or val.lower().find(search[2]) != -1)): #DB Refresh
                 dbr = DatabaseRefresh(request)
                 dbr.getDBs()
                 
@@ -117,7 +120,13 @@ for row in range(1, 300): #row
                     dbr.sourceDB = dbr.dbserver 
                     dbr.destDB = dbr.dbserver 
 
-                dbrline +=f"""{dbr.dbserver},{dbr.clientID},{dbr.instance},{dbr.sourceDB},{dbr.destDB},{dbr.rnt}
+                if(type == "5"):
+                    dbrline +=f"""{dbr.dbserver},{dbr.sourceDB},{dbr.clientID},<get Preview AD account from VT PII>
+"""
+                    dbrline +=f"""{dbr.dbserver},{dbr.sourceDB}Files,{dbr.clientID},<get Preview AD account from VT PII>
+"""                   
+                else:
+                    dbrline +=f"""{dbr.dbserver},{dbr.clientID},{dbr.instance},{dbr.sourceDB},{dbr.destDB},{dbr.rnt}
 """
                 dbrcount += 1
             # if(cType == "9"):

@@ -73,7 +73,7 @@ class DataViewer:
             })
         return htmlresponse
 
-    def getData(self, r):
+    def getData(self,r,internal=False,subjdb=""):
 
         tr = 'table tbody tr'
 
@@ -88,13 +88,16 @@ class DataViewer:
         dbs = dbstable.find(tr, containing='Live')
         data = []
 
-        for x in dbs:
+        for x in dbs:                               
             db = x.find('td:nth-child(8)') #get Ajera databases that are live
+            #if(internal and subjdb != db): continue  
             if(db[0].attrs == {'class': ('inactive',)}): #skip inactive Ajera databases
                 continue
 
             dbname = x.find('td:nth-child(4)')[0].text #get Ajera DB name column
             server = x.find('td:nth-child(9)')[0].text #get Ajera DB server
             sqlinstance = x.find('td:nth-child(10)')[0].text #get Ajera DB server instance
+            
             data.append([cID,server,sqlinstance,db[0].text,dbname])
+            if(internal and subjdb == db): return data
         return data

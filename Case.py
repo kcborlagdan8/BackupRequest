@@ -27,13 +27,16 @@ class Case():
             return val.get(dbtype, "XXXXXX")
 
         dbtype = self.subject.split("-")
-        dbtype = dbtype[1].strip()
+        dbtype = dbtype[1].strip().split(" ")[0]
+        
         return dbtypealias(dbtype)
 
     def getDB(self, dbtype):
+        #print(f"for debugging: dbtype: {dbtype}")
         self.instance = lookup.getInstanceName(self.dlz)
         if(dbtype == "D"):
             self.dbserver = "USEAPVVT0DB1"
+            
         #get DB Server if NOT PREVIEW
         else: 
             try:     
@@ -72,14 +75,16 @@ class BackupRequest(Case):
             session = SFTP().sessionGen(self.rnt)
             self.credentials = SFTP().getCred(session)
         except Exception:
-            self.credentials = "SFTP already created or the site is inaccessible"
+            self.credentials = "SFTP credentials already created or SFTP site is inaccessible"
 
-    def ajera(self):
-        if("[ajera cloud support] requesting database" in self.subject.lower()):            
+    def ajera(self,internal=False):
+        if("[ajera cloud support] requesting database:" in self.subject.lower()):  
             self.clientID = lookup.getAxiumAccountNum(self.subject)
+            self.db = self.subject.strip(self.subject.split(":")[1])
+            internal = True
         dv = DataViewer()
         html = dv.sessionGen(self.clientID)
-        data = dv.getData(html) 
+        data = dv.getData(html,internal,self.db) 
         dblist = []
         
         for d in data:
@@ -88,6 +93,7 @@ class BackupRequest(Case):
             dbdesc = d[4]
             self.db = d[3]
             dblist.append([self.dbserver,self.db,self.clientID,f"""{self.client}:{dbdesc}"""])
+
         return dblist
 
 class DatabaseRefresh(Case):
@@ -103,9 +109,15 @@ class DatabaseRefresh(Case):
             self.sourceDB = self.db
             super().getDB("S")
             self.destDB = self.db
-        else:
+        elif(self.subject.find("Production from a Copy of Sandbox") != -1):
             #logging.warning("Production from a Copy of Sandbox")
             super().getDB("S")
             self.sourceDB = self.db
             super().getDB("P")
             self.destDB = self.db
+        elif(self.subject.find("Refresh Preview from a Copy of Productio") != -1):
+            #logging.warning("Production from a Copy of Sandbox")
+            super().getDB("P")
+            self.sourceDB = self.db
+        else:
+            print(f"Invalid Database Refresh choice: {self.subject}")
